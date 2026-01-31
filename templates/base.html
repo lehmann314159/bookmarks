@@ -1,0 +1,39 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{template "title" .}}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">Bookmarks</a>
+        <div class="nav-links">
+            <a href="/categories">Categories</a>
+            <a href="/sites">Sites</a>
+            <a href="/pages">Pages</a>
+            <a href="/tags">Tags</a>
+        </div>
+        <div class="nav-search">
+            <input type="search"
+                   name="q"
+                   placeholder="Search..."
+                   hx-get="/search"
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#search-results"
+                   hx-swap="innerHTML">
+        </div>
+    </nav>
+    <div id="search-results"></div>
+    <main class="container">
+        {{template "content" .}}
+    </main>
+</body>
+</html>
+{{end}}
+
+{{define "title"}}Bookmarks{{end}}
+{{define "content"}}{{end}}

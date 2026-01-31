@@ -1,0 +1,123 @@
+{{define "index.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Bookmarks</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">Bookmarks</a>
+        <div class="nav-links">
+            <a href="/categories">Categories</a>
+            <a href="/sites">Sites</a>
+            <a href="/tags">Tags</a>
+        </div>
+        <div class="nav-search">
+            <input type="search"
+                   name="q"
+                   placeholder="Search..."
+                   hx-get="/search"
+                   hx-trigger="keyup changed delay:300ms"
+                   hx-target="#search-results"
+                   hx-swap="innerHTML">
+        </div>
+    </nav>
+    <div id="search-results"></div>
+    <main class="container">
+        <h1>Dashboard</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{.Stats.CategoryCount}}</div>
+                <div class="stat-label">Categories</div>
+                <a href="/categories" class="stat-link">View all</a>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{.Stats.SiteCount}}</div>
+                <div class="stat-label">Sites</div>
+                <a href="/sites" class="stat-link">View all</a>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{.Stats.PageCount}}</div>
+                <div class="stat-label">Bookmarks</div>
+                <a href="/sites" class="stat-link">View all</a>
+            </div>
+        </div>
+
+        <section class="quick-add">
+            <h2>Add Bookmark</h2>
+            <form hx-post="/pages/quick-add" hx-target="#recent-pages" hx-swap="afterbegin" hx-on::after-request="this.reset()">
+                <div class="form-row">
+                    <input type="url" name="url" placeholder="https://example.com/page" required>
+                    <input type="text" name="title" placeholder="Title (auto-fetched if empty)">
+                    <button type="submit">Add</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="recent-pages">
+            <h2>Recent Bookmarks</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Title</th>
+                        <th>Added</th>
+                    </tr>
+                </thead>
+                <tbody id="recent-pages">
+                    {{range .Stats.RecentPages}}
+                    {{template "recent-page-row" .}}
+                    {{end}}
+                </tbody>
+            </table>
+        </section>
+    </main>
+</body>
+</html>
+{{end}}
+
+{{define "recent-page-row"}}
+<tr>
+    <td><a href="https://{{.SiteDomain}}{{.Path}}" target="_blank">{{.SiteDomain}}{{.Path}}</a></td>
+    <td>{{if .Title}}{{.Title}}{{else}}-{{end}}</td>
+    <td>{{.CreatedAt.Format "Jan 2, 2006"}}</td>
+</tr>
+{{end}}
+
+{{define "recent-site-row"}}
+<tr>
+    <td><a href="https://{{.Domain}}" target="_blank">{{.Domain}}</a></td>
+    <td>{{if .Name}}{{.Name}}{{else}}-{{end}}</td>
+    <td>{{.CreatedAt.Format "Jan 2, 2006"}}</td>
+</tr>
+{{end}}
+
+{{define "search-results"}}
+{{if or .Sites .Pages}}
+<div class="search-dropdown">
+    {{if .Sites}}
+    <div class="search-section">
+        <h4>Sites</h4>
+        {{range .Sites}}
+        <a href="/sites?site={{.ID}}" class="search-item">{{.Domain}}{{if .Name}} - {{.Name}}{{end}}</a>
+        {{end}}
+    </div>
+    {{end}}
+    {{if .Pages}}
+    <div class="search-section">
+        <h4>Pages</h4>
+        {{range .Pages}}
+        <a href="https://{{.SiteDomain}}{{.Path}}" target="_blank" class="search-item">
+            {{if .Title}}{{.Title}}{{else}}{{.SiteDomain}}{{.Path}}{{end}}
+        </a>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}
+{{end}}

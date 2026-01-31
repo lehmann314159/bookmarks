@@ -1,0 +1,93 @@
+{{define "tags.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tags - Bookmarks</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">Bookmarks</a>
+        <div class="nav-links">
+            <a href="/categories">Categories</a>
+            <a href="/sites">Sites</a>
+            <a href="/tags">Tags</a>
+        </div>
+        <div class="nav-search">
+            <input type="search" name="q" placeholder="Search..." hx-get="/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" hx-swap="innerHTML">
+        </div>
+    </nav>
+    <div id="search-results"></div>
+    <main class="container">
+        <h1>Tags</h1>
+
+        <section class="add-form">
+            <h2>Add Tag</h2>
+            <form hx-post="/tags" hx-target="#tag-cloud" hx-swap="beforeend" hx-on::after-request="this.reset()">
+                <div class="form-row">
+                    <input type="text" name="name" placeholder="Tag name" required>
+                    <button type="submit">Add</button>
+                </div>
+            </form>
+        </section>
+
+        <section>
+            <div id="tag-cloud" class="tag-cloud">
+                {{template "tag-list" .}}
+            </div>
+        </section>
+
+        <div id="tag-items"></div>
+    </main>
+</body>
+</html>
+{{end}}
+
+{{define "tag-list"}}
+{{range .Tags}}
+{{template "tag-pill" .}}
+{{end}}
+{{end}}
+
+{{define "tag-pill"}}
+<div class="tag-card" id="tag-{{.ID}}">
+    <span class="tag-name" hx-get="/tags/{{.ID}}/items" hx-target="#tag-items" hx-swap="innerHTML">{{.Name}}</span>
+    <span class="tag-counts">{{.SiteCount}} sites, {{.PageCount}} pages</span>
+    <button class="tag-delete" hx-delete="/tags/{{.ID}}" hx-target="#tag-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this tag?">x</button>
+</div>
+{{end}}
+
+{{define "tag-items"}}
+<div class="tag-items-panel">
+    <h2>Items tagged "{{.Tag.Name}}"</h2>
+
+    {{if .Sites}}
+    <h3>Sites</h3>
+    <ul>
+        {{range .Sites}}
+        <li><a href="https://{{.Domain}}" target="_blank">{{.Domain}}</a>{{if .Name}} - {{.Name}}{{end}}</li>
+        {{end}}
+    </ul>
+    {{end}}
+
+    {{if .Pages}}
+    <h3>Pages</h3>
+    <ul>
+        {{range .Pages}}
+        <li>
+            <a href="https://{{.SiteDomain}}{{.Path}}" target="_blank">
+                {{if .Title}}{{.Title}}{{else}}{{.SiteDomain}}{{.Path}}{{end}}
+            </a>
+        </li>
+        {{end}}
+    </ul>
+    {{end}}
+
+    {{if and (not .Sites) (not .Pages)}}
+    <p>No items with this tag.</p>
+    {{end}}
+</div>
+{{end}}

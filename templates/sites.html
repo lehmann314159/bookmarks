@@ -1,0 +1,164 @@
+{{define "sites.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sites - Bookmarks</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">Bookmarks</a>
+        <div class="nav-links">
+            <a href="/categories">Categories</a>
+            <a href="/sites">Sites</a>
+            <a href="/tags">Tags</a>
+        </div>
+        <div class="nav-search">
+            <input type="search" name="q" placeholder="Search..." hx-get="/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" hx-swap="innerHTML">
+        </div>
+    </nav>
+    <div id="search-results"></div>
+    <main class="container">
+        <h1>Sites</h1>
+
+        <section class="filters">
+            <form hx-get="/sites" hx-target="#sites-container" hx-swap="innerHTML" hx-trigger="change">
+                <select name="category">
+                    <option value="">All Categories</option>
+                    {{range .Categories}}
+                    <option value="{{.ID}}" {{if $.CategoryID}}{{if eq .ID $.CategoryID}}selected{{end}}{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </form>
+        </section>
+
+        <section class="add-form">
+            <h2>Add Bookmark</h2>
+            <form hx-post="/pages" hx-target="#sites-container" hx-swap="innerHTML" hx-on::after-request="this.reset(); htmx.ajax('GET', '/sites', {target:'#sites-container'})">
+                <div class="form-row">
+                    <input type="url" name="url" placeholder="https://example.com/page" required>
+                    <input type="text" name="title" placeholder="Title (auto-fetched if empty)">
+                    <input type="text" name="tags" placeholder="Tags (comma-separated)">
+                    <button type="submit">Add</button>
+                </div>
+            </form>
+        </section>
+
+        <div id="sites-container">
+            {{template "site-list" .}}
+        </div>
+    </main>
+</body>
+</html>
+{{end}}
+
+{{define "site-list"}}
+{{range .Sites}}
+{{template "site-card" .}}
+{{end}}
+{{if not .Sites}}
+<p class="empty-state">No bookmarks yet. Add one above to get started.</p>
+{{end}}
+{{end}}
+
+{{define "site-card"}}
+<div class="site-card" id="site-{{.ID}}">
+    <div class="site-header">
+        <div class="site-info">
+            <h3><a href="https://{{.Domain}}" target="_blank">{{.Domain}}</a></h3>
+            {{if .Name}}<span class="site-name">{{.Name}}</span>{{end}}
+            {{if .CategoryName}}<span class="site-category">{{.CategoryName}}</span>{{end}}
+        </div>
+        <div class="site-tags">
+            {{range .Tags}}
+            <span class="tag">{{.Name}}</span>
+            {{end}}
+        </div>
+        <div class="site-actions">
+            <button hx-get="/sites/{{.ID}}/edit" hx-target="#site-{{.ID}}" hx-swap="outerHTML">Edit</button>
+            <button hx-delete="/sites/{{.ID}}" hx-target="#site-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this site and all its pages?">Delete</button>
+        </div>
+    </div>
+    <div class="site-pages" hx-get="/sites/{{.ID}}/pages" hx-trigger="load" hx-swap="innerHTML">
+        Loading pages...
+    </div>
+</div>
+{{end}}
+
+{{define "site-edit-form"}}
+<div class="site-card" id="site-{{.Site.ID}}">
+    <form class="site-edit" hx-put="/sites/{{.Site.ID}}" hx-target="#site-{{.Site.ID}}" hx-swap="outerHTML">
+        <div class="form-row">
+            <input type="text" name="domain" value="{{.Site.Domain}}" required placeholder="Domain">
+            <input type="text" name="name" value="{{.Site.Name}}" placeholder="Display name">
+            <select name="category_id">
+                <option value="">No Category</option>
+                {{range .Categories}}
+                <option value="{{.ID}}" {{if $.Site.CategoryID}}{{if eq .ID $.Site.CategoryID}}selected{{end}}{{end}}>{{.Name}}</option>
+                {{end}}
+            </select>
+            <input type="text" name="tags" value="{{range $i, $t := .Site.Tags}}{{if $i}}, {{end}}{{$t.Name}}{{end}}" placeholder="Tags">
+            <button type="submit">Save</button>
+            <button type="button" hx-get="/sites" hx-target="#sites-container" hx-swap="innerHTML">Cancel</button>
+        </div>
+    </form>
+</div>
+{{end}}
+
+{{define "site-pages"}}
+<ul class="page-list">
+    {{range .Pages}}
+    <li class="page-item" id="page-{{.ID}}">
+        <a href="https://{{.SiteDomain}}{{.Path}}" target="_blank" class="page-link">
+            {{if .Title}}{{.Title}}{{else}}{{.Path}}{{end}}
+        </a>
+        <span class="page-path">{{.Path}}</span>
+        <span class="page-tags">
+            {{range .Tags}}
+            <span class="tag small">{{.Name}}</span>
+            {{end}}
+        </span>
+        <span class="page-actions">
+            <button class="small" hx-get="/pages/{{.ID}}/edit" hx-target="#page-{{.ID}}" hx-swap="outerHTML">Edit</button>
+            <button class="small" hx-delete="/pages/{{.ID}}" hx-target="#page-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this page?">Delete</button>
+        </span>
+    </li>
+    {{else}}
+    <li class="page-item empty">No bookmarks saved for this site</li>
+    {{end}}
+</ul>
+{{end}}
+
+{{define "page-row"}}
+<li class="page-item" id="page-{{.ID}}">
+    <a href="https://{{.SiteDomain}}{{.Path}}" target="_blank" class="page-link">
+        {{if .Title}}{{.Title}}{{else}}{{.Path}}{{end}}
+    </a>
+    <span class="page-path">{{.Path}}</span>
+    <span class="page-tags">
+        {{range .Tags}}
+        <span class="tag small">{{.Name}}</span>
+        {{end}}
+    </span>
+    <span class="page-actions">
+        <button class="small" hx-get="/pages/{{.ID}}/edit" hx-target="#page-{{.ID}}" hx-swap="outerHTML">Edit</button>
+        <button class="small" hx-delete="/pages/{{.ID}}" hx-target="#page-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this page?">Delete</button>
+    </span>
+</li>
+{{end}}
+
+{{define "page-edit-form"}}
+<li class="page-item editing" id="page-{{.Page.ID}}">
+    <form hx-put="/pages/{{.Page.ID}}" hx-target="#page-{{.Page.ID}}" hx-swap="outerHTML">
+        <input type="hidden" name="site_id" value="{{.Page.SiteID}}">
+        <input type="text" name="path" value="{{.Page.Path}}" placeholder="Path" required>
+        <input type="text" name="title" value="{{.Page.Title}}" placeholder="Title">
+        <input type="text" name="tags" value="{{range $i, $t := .Page.Tags}}{{if $i}}, {{end}}{{$t.Name}}{{end}}" placeholder="Tags">
+        <button type="submit" class="small">Save</button>
+        <button type="button" class="small" hx-get="/sites/{{.Page.SiteID}}/pages" hx-target="closest ul" hx-swap="innerHTML">Cancel</button>
+    </form>
+</li>
+{{end}}

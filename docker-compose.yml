@@ -1,0 +1,12 @@
+services:
+  bookmarks:
+    image: lehmann314159/bookmarks:latest
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - bookmarks_data:/data
+    restart: unless-stopped
+
+volumes:
+  bookmarks_data:

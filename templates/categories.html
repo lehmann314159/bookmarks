@@ -1,0 +1,88 @@
+{{define "categories.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categories - Bookmarks</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">Bookmarks</a>
+        <div class="nav-links">
+            <a href="/categories">Categories</a>
+            <a href="/sites">Sites</a>
+            <a href="/tags">Tags</a>
+        </div>
+        <div class="nav-search">
+            <input type="search" name="q" placeholder="Search..." hx-get="/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" hx-swap="innerHTML">
+        </div>
+    </nav>
+    <div id="search-results"></div>
+    <main class="container">
+        <h1>Categories</h1>
+
+        <section class="add-form">
+            <h2>Add Category</h2>
+            <form hx-post="/categories" hx-target="#category-table tbody" hx-swap="beforeend" hx-on::after-request="this.reset()">
+                <div class="form-row">
+                    <input type="text" name="name" placeholder="Category name" required>
+                    <input type="text" name="description" placeholder="Description (optional)">
+                    <button type="submit">Add</button>
+                </div>
+            </form>
+        </section>
+
+        <section>
+            <table id="category-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Sites</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{template "category-list" .}}
+                </tbody>
+            </table>
+        </section>
+    </main>
+</body>
+</html>
+{{end}}
+
+{{define "category-list"}}
+{{range .Categories}}
+{{template "category-row" .}}
+{{end}}
+{{end}}
+
+{{define "category-row"}}
+<tr id="category-{{.ID}}">
+    <td>{{.Name}}</td>
+    <td>{{.Description}}</td>
+    <td><a href="/sites?category={{.ID}}">{{.SiteCount}}</a></td>
+    <td class="actions">
+        <button hx-get="/categories/{{.ID}}/edit" hx-target="#category-{{.ID}}" hx-swap="outerHTML">Edit</button>
+        <button hx-delete="/categories/{{.ID}}" hx-target="#category-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this category?">Delete</button>
+    </td>
+</tr>
+{{end}}
+
+{{define "category-edit-form"}}
+<tr id="category-{{.ID}}">
+    <form hx-put="/categories/{{.ID}}" hx-target="#category-{{.ID}}" hx-swap="outerHTML">
+        <td><input type="text" name="name" value="{{.Name}}" required></td>
+        <td><input type="text" name="description" value="{{.Description}}"></td>
+        <td>{{.SiteCount}}</td>
+        <td class="actions">
+            <button type="submit">Save</button>
+            <button type="button" hx-get="/categories" hx-target="#category-table tbody" hx-swap="innerHTML">Cancel</button>
+        </td>
+    </form>
+</tr>
+{{end}}

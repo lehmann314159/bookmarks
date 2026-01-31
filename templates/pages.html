@@ -1,0 +1,133 @@
+{{define "pages.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pages - Bookmarks</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">Bookmarks</a>
+        <div class="nav-links">
+            <a href="/categories">Categories</a>
+            <a href="/sites">Sites</a>
+            <a href="/pages">Pages</a>
+            <a href="/tags">Tags</a>
+        </div>
+        <div class="nav-search">
+            <input type="search" name="q" placeholder="Search..." hx-get="/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" hx-swap="innerHTML">
+        </div>
+    </nav>
+    <div id="search-results"></div>
+    <main class="container">
+        <h1>Pages</h1>
+
+        <section class="filters">
+            <form hx-get="/pages" hx-target="#page-table tbody" hx-swap="innerHTML" hx-trigger="change">
+                <select name="site">
+                    <option value="">All Sites</option>
+                    {{range .Sites}}
+                    <option value="{{.ID}}" {{if $.SiteID}}{{if eq .ID $.SiteID}}selected{{end}}{{end}}>{{.Domain}}</option>
+                    {{end}}
+                </select>
+                <select name="category">
+                    <option value="">All Categories</option>
+                    {{range .Categories}}
+                    <option value="{{.ID}}" {{if $.CategoryID}}{{if eq .ID $.CategoryID}}selected{{end}}{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+                <select name="tag">
+                    <option value="">All Tags</option>
+                    {{range .Tags}}
+                    <option value="{{.ID}}" {{if $.TagID}}{{if eq .ID $.TagID}}selected{{end}}{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </form>
+        </section>
+
+        <section class="add-form">
+            <h2>Add Page</h2>
+            <form hx-post="/pages" hx-target="#page-table tbody" hx-swap="afterbegin" hx-on::after-request="this.reset()">
+                <div class="form-row">
+                    <input type="url" name="url" placeholder="https://example.com/page" required>
+                    <input type="text" name="title" placeholder="Title (optional)">
+                </div>
+                <div class="form-row">
+                    <input type="text" name="description" placeholder="Description (optional)">
+                    <input type="text" name="tags" placeholder="Tags (comma-separated)">
+                    <button type="submit">Add</button>
+                </div>
+            </form>
+        </section>
+
+        <section>
+            <table id="page-table">
+                <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Title</th>
+                        <th>Tags</th>
+                        <th>Added</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{template "page-list" .}}
+                </tbody>
+            </table>
+        </section>
+    </main>
+</body>
+</html>
+{{end}}
+
+{{define "page-list"}}
+{{range .Pages}}
+{{template "page-row" .}}
+{{end}}
+{{end}}
+
+{{define "page-row"}}
+<tr id="page-{{.ID}}">
+    <td><a href="https://{{.SiteDomain}}{{.Path}}" target="_blank">{{.SiteDomain}}{{.Path}}</a></td>
+    <td>{{if .Title}}{{.Title}}{{else}}-{{end}}</td>
+    <td>
+        {{range .SiteTags}}
+        <span class="tag inherited" title="Inherited from site">{{.Name}}</span>
+        {{end}}
+        {{range .Tags}}
+        <span class="tag">{{.Name}}</span>
+        {{end}}
+    </td>
+    <td>{{.CreatedAt.Format "Jan 2, 2006"}}</td>
+    <td class="actions">
+        <button hx-get="/pages/{{.ID}}/edit" hx-target="#page-{{.ID}}" hx-swap="outerHTML">Edit</button>
+        <button hx-delete="/pages/{{.ID}}" hx-target="#page-{{.ID}}" hx-swap="outerHTML" hx-confirm="Delete this page?">Delete</button>
+    </td>
+</tr>
+{{end}}
+
+{{define "page-edit-form"}}
+<tr id="page-{{.Page.ID}}">
+    <form hx-put="/pages/{{.Page.ID}}" hx-target="#page-{{.Page.ID}}" hx-swap="outerHTML">
+        <td>
+            <select name="site_id">
+                {{range .Sites}}
+                <option value="{{.ID}}" {{if eq .ID $.Page.SiteID}}selected{{end}}>{{.Domain}}</option>
+                {{end}}
+            </select>
+            <input type="text" name="path" value="{{.Page.Path}}" required>
+        </td>
+        <td><input type="text" name="title" value="{{.Page.Title}}"></td>
+        <td><input type="text" name="tags" value="{{range $i, $t := .Page.Tags}}{{if $i}}, {{end}}{{$t.Name}}{{end}}"></td>
+        <td>{{.Page.CreatedAt.Format "Jan 2, 2006"}}</td>
+        <td class="actions">
+            <button type="submit">Save</button>
+            <button type="button" hx-get="/pages" hx-target="#page-table tbody" hx-swap="innerHTML">Cancel</button>
+        </td>
+    </form>
+</tr>
+{{end}}
