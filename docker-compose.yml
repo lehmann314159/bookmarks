@@ -1,12 +1,17 @@
 services:
   bookmarks:
     image: lehmann314159/bookmarks:latest
-    build: .
     ports:
       - "8081:8080"
     volumes:
       - bookmarks_data:/data
     restart: unless-stopped
+    networks:
+      - web
 
 volumes:
   bookmarks_data:
+
+networks:
+  web:
+    external: true
